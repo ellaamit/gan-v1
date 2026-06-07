@@ -1,0 +1,115 @@
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+
+
+
+
+const int touchPin = 2; 
+int buttion = 3;
+int gunpin = 12;
+
+
+// משתנים שמשתנים בתוך פסיקה חייבים להיות מוגדרים כ-volatile
+volatile int memo = 0; 
+volatile int ans = 0; 
+volatile bool buttonPressed = false;
+volatile bool touchPressed = false; 
+
+
+void setup() {
+  // פתיחת ערוץ התקשורת הטורית
+  Serial.begin(115200);
+  
+  lcd.init();
+  lcd.backlight();
+  
+  pinMode(touchPin, INPUT_PULLUP);
+  pinMode(buttion, INPUT_PULLUP);
+  pinMode(gunpin, OUTPUT);
+
+  // הדפסת הודעה ראשונית כדי לדעת שהמסך עובד
+
+
+  // הגדרת ה-IRQ (הפסיקה) לפין 3
+  attachInterrupt(digitalPinToInterrupt(buttion), buttonISR, FALLING);
+
+  attachInterrupt(digitalPinToInterrupt(touchPin), touchISR, FALLING);
+}
+
+void loop() {
+  // קריאת המצב הנוכחי של חיישן המגע
+  ans = 4-memo;
+
+  if (buttonPressed) {
+    shoot();
+  }
+
+  if(touchPressed){
+    start();
+  }
+
+  if(memo == 4){
+    delay(500);
+    lcd.setCursor(2,0);
+    lcd.print("GAME");
+    lcd.setCursor(2,1);
+    lcd.print("OVER");
+    delay(1500);
+    lcd.clear();
+    memo = 0;
+  }
+  if(memo > 4){
+    memo = 4;
+  }
+
+
+
+
+}
+
+// פונקציית הפסיקה (ISR) - עכשיו היא נקייה, מהירה ובטוחה!
+void buttonISR() {
+  memo = memo + 1; 
+  buttonPressed = true; // מסמנת ל-loop שהייתה לחיצה
+}
+
+void touchISR(){
+  touchPressed = true;
+}
+
+void shoot(){
+    lcd.setCursor(2, 1);
+    lcd.print("shoot");
+    digitalWrite(gunpin, HIGH);
+    delay(100);
+    digitalWrite(gunpin, LOW);
+    delay(700);
+    lcd.clear();
+    lcd.setCursor(1,0);
+    lcd.print("you only have");
+    lcd.setCursor(2,1);
+    lcd.print(ans);
+    //זה לא עובד טוב כשזה המשתנה להחליף לפונקציה מחזירה ארך
+    lcd.setCursor(4,1);
+    lcd.print("shoot left");
+    delay(1500);
+    lcd.clear();
+    buttonPressed = false;
+}
+
+void start(){
+    lcd.setCursor(2,0);
+    lcd.print("hello");
+    delay(1000);
+    lcd.clear();
+    lcd.setCursor(2, 0);
+    lcd.print("to shoot");
+    delay(800);
+    lcd.setCursor(0, 1);
+    lcd.print("press the button");
+    delay(3000);
+    lcd.clear();
+    touchPressed = 0;
+
+}
